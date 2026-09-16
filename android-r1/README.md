@@ -1,6 +1,6 @@
 # R1 Android Client
 
-Android 5.1 / API 22 compatible Phicomm R1 client. The first executable slice now contains microphone capture, hybrid libfvad endpointing and Opus JNI encode/decode diagnostics.
+Android 5.1 / API 22 compatible Phicomm R1 client. The first executable slice now contains microphone capture, hybrid libfvad endpointing, Opus JNI encode/decode and speaker playback diagnostics.
 
 ## Current implementation
 
@@ -8,9 +8,14 @@ Android 5.1 / API 22 compatible Phicomm R1 client. The first executable slice no
 app/src/main/java/io/nannyu/voicesatellite/r1/
   MainActivity.java                 diagnostics UI
   audio/AudioRecorder.java         16 kHz PCM16 + pre-roll + endpointing
+  audio/AudioProbe.java            mic-source probe + playback diagnostics with hard timeouts
+  audio/AudioPlayer.java           blocking 16 kHz mono PCM16 AudioTrack playback
+  audio/PcmAudio.java              pure PCM16 helpers (stereo downmix, tone generation)
   audio/VadDetector.java           libfvad JNI wrapper
   audio/OpusEncoder.java           Opus JNI encoder
   audio/OpusDecoder.java           Opus JNI decoder
+app/src/test/java/io/nannyu/voicesatellite/r1/audio/
+  PcmAudioTest.java                JVM unit tests for the pure PCM helpers
 app/src/main/cpp/
   voice_sat_native.cpp             project JNI bridge
   CMakeLists.txt
@@ -48,10 +53,13 @@ The adapted Java/JNI structure originates from MIT-licensed `kitakeyos-dev/r1-ma
 
 ## Diagnostics APK
 
-The launcher Activity currently provides two tests:
+The launcher Activity currently provides three tests:
 
-1. `Test VAD + Opus JNI`: loads the ARMv7 native library and performs an Opus encode/decode smoke test.
-2. `Start / Stop microphone`: opens `VOICE_COMMUNICATION` at 16 kHz mono PCM16 and runs the hybrid VAD endpointing path.
+1. `Run automatic R1 Audio Probe`: records MIC, VOICE_RECOGNITION and VOICE_COMMUNICATION at 16 kHz stereo with software mono downmix and libfvad, then plays a 440 Hz tone while recording on MIC to verify the playback path and simultaneous capture/playback. Every stage has an 8 second hard timeout and the report is printed on screen.
+2. `Test VAD + Opus JNI`: loads the ARMv7 native library and performs an Opus encode/decode smoke test.
+3. `Start / Stop microphone`: opens `VOICE_COMMUNICATION` at 16 kHz mono PCM16 and runs the hybrid VAD endpointing path.
+
+Pure PCM helpers (stereo downmix, test-tone generation) live in `PcmAudio` without Android imports and are covered by `gradle :app:testDebugUnitTest`, which also runs in CI before the APK build.
 
 The recorder uses 30 ms frames, 300 ms pre-roll, minimum speech gating and about 800 ms trailing-silence endpointing. libfvad is primary; low-level capture can fall back to amplitude detection.
 

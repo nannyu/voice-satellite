@@ -21,6 +21,9 @@ public final class AudioProbe {
     private static final int INPUT_FRAME_BYTES=RATE*FRAME_MS/1000*INPUT_CHANNELS*PCM_BYTES;
     private static final int MONO_FRAME_BYTES=RATE*FRAME_MS/1000*PCM_BYTES;
     private static final long SOURCE_TIMEOUT_MS=8000, STOP_GRACE_MS=1000;
+    private static final int TONE_HZ=440, TONE_MS=1500;
+    private static final double TONE_AMPLITUDE=0.5;
+    private static final long BASELINE_MS=500, TRAILING_MS=500;
     private volatile boolean cancelled;
 
     public void cancel(){cancelled=true;}
@@ -47,6 +50,10 @@ public final class AudioProbe {
                 }
             }
             report.append(result.format()).append("\n");
+        }
+        if(!cancelled){
+            listener.onProgress("Playing "+TONE_HZ+" Hz tone for "+(TONE_MS/1000)+" s while recording on MIC...\nHard timeout: 8 seconds.");
+            report.append(probePlaybackWithTimeout().format()).append("\n");
         }
         if(cancelled)report.append("\nCANCELLED");
         listener.onComplete(report.toString());
@@ -142,6 +149,110 @@ public final class AudioProbe {
 
     private static int rms(byte[] pcm){long sum=0;int count=pcm.length/2;for(int i=0;i+1<pcm.length;i+=2){short sample=(short)((pcm[i]&255)|(pcm[i+1]<<8));sum+=(long)sample*sample;}return count==0?0:(int)Math.sqrt(sum/count);}
     private static String name(int source){if(source==MediaRecorder.AudioSource.MIC)return "MIC";if(source==MediaRecorder.AudioSource.VOICE_RECOGNITION)return "VOICE_RECOGNITION";if(source==MediaRecorder.AudioSource.VOICE_COMMUNICATION)return "VOICE_COMMUNICATION";return String.valueOf(source);}
+
+    private PlaybackResult probePlaybackWithTimeout(){
+        PlaybackTask task=new PlaybackTask();
+        Thread worker=new Thread(task,"r1-audio-playback");
+        worker.start();
+        try{worker.join(SOURCE_TIMEOUT_MS);}catch(InterruptedException e){Thread.currentThread().interrupt();cancelled=true;}
+        if(!worker.isAlive())return task.result();
+
+        Log.e(TAG,"playback stage timed out; requesting asynchronous AudioRecord stop");
+        task.requestStop();
+        try{worker.join(STOP_GRACE_MS);}catch(InterruptedException e){Thread.currentThread().interrupt();}
+        PlaybackResult timeout=task.result();
+        timeout.timedOut=true;
+        timeout.error="hard timeout after "+SOURCE_TIMEOUT_MS+" ms"+(worker.isAlive()?"; playback thread still blocked":"; playback thread stopped during cleanup");
+        return timeout;
+    }
+
+    private static final class PlaybackTask implements Runnable {
+        private final PlaybackResult result=new PlaybackResult();
+        private volatile boolean stopRequested;
+        private volatile AudioRecord activeRecord;
+
+        PlaybackResult result(){return result;}
+
+        void requestStop(){
+            stopRequested=true;
+            final AudioRecord record=activeRecord;
+            if(record==null)return;
+            new Thread(()->release(record),"r1-playback-timeout-cleanup").start();
+        }
+
+        @Override public void run(){probePlayback();}
+
+        @SuppressLint("MissingPermission") private void probePlayback(){
+            AudioRecord record=null;
+            try{
+                int min=AudioRecord.getMinBufferSize(RATE,AudioFormat.CHANNEL_IN_STEREO,AudioFormat.ENCODING_PCM_16BIT);result.minBuffer=min;
+                if(min<=0){result.error="getMinBufferSize(stereo)="+min;return;}
+                record=new AudioRecord(MediaRecorder.AudioSource.MIC,RATE,AudioFormat.CHANNEL_IN_STEREO,AudioFormat.ENCODING_PCM_16BIT,Math.max(min*2,INPUT_FRAME_BYTES*4));
+                activeRecord=record;
+                result.captureInitialized=record.getState()==AudioRecord.STATE_INITIALIZED;
+                if(!result.captureInitialized){result.error="AudioRecord stereo not initialized";return;}
+                record.startRecording();result.recording=record.getRecordingState()==AudioRecord.RECORDSTATE_RECORDING;
+                if(!result.recording){result.error="AudioRecord did not enter RECORDSTATE_RECORDING";return;}
+
+                final AudioRecord capture=record;
+                Thread reader=new Thread(()->readPhases(capture),"r1-playback-capture");
+                reader.start();
+                SystemClock.sleep(BASELINE_MS);
+                result.phase=1;
+                result.track=new AudioPlayer().playBlocking(PcmAudio.sineTone(RATE,TONE_HZ,TONE_MS,TONE_AMPLITUDE));
+                result.phase=2;
+                SystemClock.sleep(TRAILING_MS);
+                result.phase=3;
+                stopRequested=true;
+                try{reader.join(STOP_GRACE_MS);}catch(InterruptedException e){Thread.currentThread().interrupt();}
+                Log.i(TAG,"playback done played="+(result.track!=null&&result.track.played)+" duringFrames="+result.frames[1]);
+            }catch(Throwable t){result.error=t.toString();Log.e(TAG,"playback probe failed",t);}
+            finally{
+                activeRecord=null;
+                if(record!=null)release(record);
+            }
+        }
+
+        private void readPhases(AudioRecord record){
+            byte[] stereoFrame=new byte[INPUT_FRAME_BYTES];byte[] monoFrame=new byte[MONO_FRAME_BYTES];
+            long started=SystemClock.elapsedRealtime();
+            while(!stopRequested&&result.phase<3){
+                int off=0;
+                while(off<INPUT_FRAME_BYTES&&!stopRequested){
+                    int n=record.read(stereoFrame,off,INPUT_FRAME_BYTES-off);
+                    if(n<0){result.error="read="+n;return;}
+                    if(n==0){
+                        if(SystemClock.elapsedRealtime()-started>SOURCE_TIMEOUT_MS){result.error="read returned no PCM data";return;}
+                        Thread.yield();continue;
+                    }
+                    off+=n;
+                }
+                if(off!=INPUT_FRAME_BYTES)break;
+                PcmAudio.downmixStereoToMono(stereoFrame,monoFrame);
+                result.addFrame(result.phase,rms(monoFrame));
+            }
+        }
+    }
+
+    private static final class PlaybackResult {
+        boolean captureInitialized,recording,timedOut;int minBuffer;String error;AudioPlayer.Result track;
+        volatile int phase;
+        final int[] frames=new int[3];final long[] sumRms=new long[3];final int[] peakRms=new int[3];
+
+        synchronized void addFrame(int which,int value){if(which<0||which>2)return;frames[which]++;sumRms[which]+=value;peakRms[which]=Math.max(peakRms[which],value);}
+        private int avgRms(int which){return frames[which]==0?0:(int)(sumRms[which]/frames[which]);}
+        boolean simultaneous(){return track!=null&&track.played&&frames[1]>0;}
+        String format(){
+            AudioPlayer.Result t=track;
+            return String.format(Locale.US,"[PLAYBACK]\ntone=%d Hz/%d ms/amplitude=%.2f trackInit=%s played=%s written=%d/%d minBuffer=%d\ncapture=stereo init=%s recording=%s baseline=%df/avgRms=%d during=%df/avgRms=%d/peak=%d after=%df/avgRms=%d\nsimultaneous=%s timeout=%s%s%s\n",
+                TONE_HZ,TONE_MS,TONE_AMPLITUDE,
+                t!=null&&t.initialized,t!=null&&t.played,t==null?0:t.bytesWritten,t==null?0:t.bytesExpected,t==null?0:t.minBuffer,
+                captureInitialized,recording,frames[0],avgRms(0),frames[1],avgRms(1),peakRms[1],frames[2],avgRms(2),
+                simultaneous(),timedOut,
+                error==null?"":"\nERROR: "+error,
+                t!=null&&t.error!=null?"\nTRACK ERROR: "+t.error:"");
+        }
+    }
 
     private static final class Result {
         final String source;boolean initialized,recording,vadInitialized,timedOut,skipped;int minBuffer,actualRate,channelCount,frames,avgRms,peakRms,nonSilentFrames,vadSpeechFrames;String error,vadError;
