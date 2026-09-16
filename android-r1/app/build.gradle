@@ -29,6 +29,7 @@ android {
 }
 
 dependencies {
+    implementation 'com.squareup.okhttp3:okhttp:3.12.13'
     testImplementation 'junit:junit:4.13.2'
     // Vintage org.json matching the Android 5.1 framework API surface for JVM tests.
     testImplementation 'org.json:json:20140107'
