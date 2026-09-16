@@ -6,12 +6,12 @@ Goal: prove the stock R1 is a viable endpoint before writing the integration aro
 
 Tasks:
 
-- connect with Wi-Fi ADB
-- collect Android/build/package information
-- enumerate audio input sources and supported formats
-- record microphone samples
-- test speaker playback
-- test simultaneous/alternating capture and playback
+- connect with Wi-Fi ADB — verified 2026-09-17
+- collect Android/build/package information — verified 2026-09-17 (stock 3415 inventory and the 3415 → 3448 upgrade in `tools/r1-upgrade-3448/`)
+- enumerate audio input sources and supported formats — implemented in the diagnostics probe (MIC / VOICE_RECOGNITION / VOICE_COMMUNICATION, 16 kHz stereo PCM16 with software mono); device verification pending
+- record microphone samples — implemented in the diagnostics probe; device verification pending
+- test speaker playback — implemented 2026-09-17 (`AudioPlayer`, 0.1.2-playback); device verification pending
+- test simultaneous/alternating capture and playback — implemented 2026-09-17 (probe plays a 440 Hz tone while recording); device verification pending
 - inspect audio focus behavior
 - identify vendor service conflicts
 - measure idle memory and CPU budget
@@ -20,15 +20,15 @@ Exit criteria:
 
 - repeatable microphone recording without Root
 - repeatable speaker playback without Root
-- documented ADB recovery path
+- documented ADB recovery path — verified 2026-09-17 (`tools/r1-upgrade-3448/` file-level backup plus pinned OTA restore path; raw brick recovery still requires Rockchip Loader/Maskrom)
 
 ## Phase 1 - Android audio skeleton
 
-- minimum Android-compatible Gradle project
+- minimum Android-compatible Gradle project — verified 2026-09-17 (CI builds the armeabi-v7a debug APK and runs unit tests)
 - foreground/background service strategy compatible with target runtime
-- AudioRecord capture
-- AudioTrack playback
-- diagnostics Activity
+- AudioRecord capture — implemented in the diagnostics build; device verification pending
+- AudioTrack playback — implemented 2026-09-17 (`AudioPlayer`); device verification pending
+- diagnostics Activity — implemented (probe, JNI smoke test, manual capture)
 - connection/retry skeleton
 
 Exit criteria: install APK over ADB and complete a loopback/test-session reliably.
