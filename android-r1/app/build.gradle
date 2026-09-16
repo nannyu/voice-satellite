@@ -9,8 +9,8 @@ android {
         applicationId 'io.nannyu.voicesatellite.r1'
         minSdk 22
         targetSdk 22
-        versionCode 1
-        versionName '0.1.0-dev'
+        versionCode 2
+        versionName '0.1.1-probe10'
         ndk { abiFilters 'armeabi-v7a' }
         externalNativeBuild { cmake { cppFlags '-std=c++11'; arguments '-DANDROID_STL=c++_shared' } }
     }
@@ -28,4 +28,6 @@ android {
     externalNativeBuild { cmake { path 'src/main/cpp/CMakeLists.txt'; version '3.22.1' } }
 }
 
-dependencies { }
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}
