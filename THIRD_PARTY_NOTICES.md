@@ -2,7 +2,7 @@
 
 This file tracks upstream projects and third-party components that may influence or be incorporated into `voice-satellite`.
 
-Audit date: 2026-09-16.
+Audit date: 2026-09-17.
 
 ## kitakeyos-dev/r1-manager
 
@@ -43,6 +43,18 @@ Project policy: no Snowboy binary, model or resource is imported until the exact
 ## Opus and libfvad
 
 `r1-manager` uses Opus and libfvad/WebRTC VAD through native integration. Before native binaries or source are imported, their own license notices and source provenance must be included here and in the distributable APK notices.
+
+## Phicomm R1 stock firmware OTA
+
+Archive source: https://github.com/pexcn/phicomm-r1-ota
+
+Pinned archive commit: `2ce76756bfd9495370a5e82e46474032779654dc`.
+
+Bundled artifact: `tools/r1-upgrade-3448/firmware/incremental-ota-3415-3448.zip`.
+
+Integrity: 8,134,939 bytes; MD5 `ffb637b235077752af7306567eae8ef4`; SHA-256 `581c1bdcb6313b9b9acf2ea545731816872298c97326005ab7a409f5efa89b88`.
+
+License status: vendor firmware binary with no identified redistribution license. It is not project source code and is retained for device maintenance/recovery. Review redistribution rights before publishing it in a release or third-party package.
 
 ## Import checklist
 

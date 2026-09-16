@@ -1,0 +1,4 @@
+c7c9df7cf372797fd174ac6baab32bdd569b0742da5bd1c9e7cf040cf5c0bda7  README.md
+22c909cbd630dd1901a34fd30b902d38e6608cb01a9cfe4937240fb0b1541613  upgrade-r1-to-3448.command
+436cc7d01478c1d0b9fa47435e9c7c2a5cc931405d1f5ef97635ff22bfc4b646  tests/test-upgrade-script.sh
+581c1bdcb6313b9b9acf2ea545731816872298c97326005ab7a409f5efa89b88  firmware/incremental-ota-3415-3448.zip

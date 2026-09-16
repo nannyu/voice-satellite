@@ -53,6 +53,7 @@ android-r1/                 Android 5.1 R1 client
 gateway/                     Optional generic Voice Gateway
 adapters/                    Server-side integrations
 docs/                        Architecture, protocol and reuse design
+tools/r1-upgrade-3448/       Verified stock 3415 → 3448 upgrade package
 THIRD_PARTY_NOTICES.md       License/provenance policy
 ```
 
@@ -66,6 +67,14 @@ The project now has an explicit reuse policy instead of treating all community c
 - Snowboy/native/model assets are audited separately from the repository that happens to contain them.
 
 See [`docs/06-source-reuse-inventory.md`](docs/06-source-reuse-inventory.md), [`docs/07-upstream-integration.md`](docs/07-upstream-integration.md), and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+## R1 stock firmware maintenance
+
+The tested 3415 → 3448 backup and upgrade workflow is packaged under
+[`tools/r1-upgrade-3448/`](tools/r1-upgrade-3448/README.md). It verifies the
+exact source build, creates the file-level backup available through stock ADB,
+hosts the bundled signed OTA on the LAN, waits for the R1 to return, and checks
+the final 3448 fingerprint. The backup is not a raw brick-recovery image.
 
 ## MVP v0.1
 
