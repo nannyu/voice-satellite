@@ -39,8 +39,8 @@ Exit criteria: install APK over ADB and complete a loopback/test-session reliabl
 - VAD — implemented in the diagnostics build (libfvad JNI, unverified on device)
 - pre-roll audio buffer — implemented in `AudioRecorder` (unverified on device)
 - session state machine — in progress 2026-09-17: pure-Java `SessionController` with JVM transition-table tests; not yet wired into a service or UI
-- WebSocket transport — in progress 2026-09-17: `WebSocketTransport` (OkHttp 3.12) + `ConnectionSupervisor`; reconnect/heartbeat decisions unit-tested on the JVM; no live server test yet
-- binary audio frames — in progress 2026-09-17: binary send/receive path implemented in `WebSocketTransport`; no live server test yet
+- WebSocket transport — in progress 2026-09-17: `WebSocketTransport` (OkHttp 3.12) + `ConnectionSupervisor`; reconnect/heartbeat decisions unit-tested on the JVM; reference echo server available in `gateway/test_server.py` with pytest coverage; no Android-to-server live test yet
+- binary audio frames — in progress 2026-09-17: binary send/receive path implemented in `WebSocketTransport`; echo round-trip validated server-side by `gateway/test_protocol.py`; no Android-to-server live test yet
 
 Exit criteria: wake, speak and receive captured utterance at a test server for 20 consecutive sessions without app restart.
 

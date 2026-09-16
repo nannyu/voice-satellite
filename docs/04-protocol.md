@@ -189,6 +189,25 @@ in the 0.2.0-dev client; the protocol remains a draft:
 - A new wake word while `PROCESSING` or `SPEAKING` is rejected by the client
   session controller (barge-in is a v0.1 non-goal).
 
+## Reference server notes (draft)
+
+Pinned while implementing `gateway/test_server.py`, the reference/echo server
+used for end-to-end session validation:
+
+- `response.start` and `response.end` carry the `session_id` of the voice
+  session they answer.
+- Handshake failures use error code `HANDSHAKE_FAILED` (missing/invalid field)
+  or `PROTOCOL_VERSION_UNSUPPORTED` (unknown `protocol`), both
+  `recoverable: false`, followed by close code 1002.
+- Malformed in-session messages (for example `voice.start` without
+  `session_id`) use error code `INVALID_MESSAGE` with `recoverable: true`;
+  the connection stays open.
+- The reference server accepts one active client; additional connections get
+  error code `SERVER_BUSY` (`recoverable: true`) and close code 1013.
+- Dead-link detection mirrors the client: the server closes (code 1001) after
+  `heartbeat_seconds` plus the heartbeat timeout of total inbound silence.
+- The server answers `ping` with exactly `{"type":"pong"}`.
+
 ## Versioning
 
 - Integer protocol major version in handshake.
