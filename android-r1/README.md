@@ -14,13 +14,28 @@ app/src/main/java/io/nannyu/voicesatellite/r1/
   audio/VadDetector.java           libfvad JNI wrapper
   audio/OpusEncoder.java           Opus JNI encoder
   audio/OpusDecoder.java           Opus JNI decoder
-app/src/test/java/io/nannyu/voicesatellite/r1/audio/
-  PcmAudioTest.java                JVM unit tests for the pure PCM helpers
+  session/SessionController.java   pure-Java satellite state machine (idle/listening/processing/speaking)
+  protocol/Protocol.java           docs/04 draft message constructors and parsers (org.json)
+  transport/WebSocketTransport.java     thin OkHttp 3.12 WebSocket wrapper (text + binary frames)
+  transport/ConnectionSupervisor.java   reconnect + heartbeat wiring (not unit-tested)
+  transport/ReconnectPolicy.java        pure backoff decisions (exponential, capped, jittered)
+  transport/HeartbeatMonitor.java       pure heartbeat/dead-link decisions with injected clock
+app/src/test/java/io/nannyu/voicesatellite/r1/
+  audio/PcmAudioTest.java               JVM unit tests for the pure PCM helpers
+  session/SessionControllerTest.java    state machine transition table tests
+  protocol/ProtocolTest.java            protocol shape and tolerance tests
+  transport/ReconnectPolicyTest.java    backoff sequence, cap and jitter bounds
+  transport/HeartbeatMonitorTest.java   heartbeat interval and dead-link verdicts
 app/src/main/cpp/
   voice_sat_native.cpp             project JNI bridge
   CMakeLists.txt
 scripts/bootstrap-native.sh        pinned upstream dependency bootstrap
 ```
+
+The session/protocol/transport layer is device-independent, fully unit-tested
+on the JVM, and deliberately not wired into the diagnostics UI yet. org.json is
+provided by the Android framework on device; JVM tests pin the vintage
+`org.json:json:20140107` artifact to stay on the Android 5.1 API surface.
 
 Target: `minSdk 22`, `targetSdk 22`, `armeabi-v7a` only. The debug APK is intentionally a hardware/codec diagnostic build, not yet the Home Assistant satellite service.
 
