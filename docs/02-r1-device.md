@@ -160,3 +160,42 @@ Do not initially uninstall vendor packages. During hardware validation:
 4. Document the exact restore command.
 
 The project should be recoverable without reflashing the device.
+
+## Stock boot music (verified 3448, 2026-09-17)
+
+The audible power-on jingle is NOT Rockchip `bootaudio` (`/system/media/bootaudio.zip`
+contains only `audio_conf.txt` mixer settings, no audio payload). It is played by
+`com.phicomm.speaker.device` (Unisound.apk): on `BOOT_COMPLETED`,
+`.Receiver.MessageReceiver` starts `.ui.MainActivity`, which plays the APK resource
+`res/raw/bootloader_completed.mp3` (~5 s) through `UniMediaPlayer.playBeepSound`.
+Baseline logcat: `E/MessageReceiver: action boot complted` → `D/UniMediaPlayer:
+---->>playBeepSound` → `onCompletion`.
+
+Disabled without root via package hide (community-proven, reversible):
+
+```sh
+adb shell "sh /system/bin/pm hide com.phicomm.speaker.device"
+adb shell reboot
+# restore:
+adb shell "sh /system/bin/pm unhide com.phicomm.speaker.device"
+```
+
+Verified on 3448: after reboot, no `playBeepSound`/`MessageReceiver` boot logs,
+no `com.phicomm.speaker.device` process, `sys.boot_completed=1`, no FATAL/ANR.
+
+Side effects of hiding this package: stock 小讯 wake-word/voice answers and the
+top-button Bluetooth pairing gesture stop working. Volume keys (Launcher) and
+other stock services are unaffected.
+
+Device ADB quirks found along the way:
+
+- Stock adbd (`/sbin/adbd`) runs a command whitelist (`create_subproc not support
+  <cmd>`): bare `pm` is rejected and drops the ADB connection; invoking it as
+  `sh /system/bin/pm ...` works.
+- Shell lacks `CHANGE_COMPONENT_ENABLED_STATE`, so `pm disable <pkg>/<component>`
+  fails with SecurityException; `pm hide` on the package works.
+- `adb root` does not elevate (Rockchip build ignores `service.adb.root`;
+  `sys.rkadb.root` is not settable). SELinux is permissive, so `setprop` of
+  non-`ro.` properties works, but `/system` and ramdisk stay read-only to shell.
+- ADB over TCP intermittently returns `error: closed`; a fresh reconnect per
+  command is the reliable pattern.
