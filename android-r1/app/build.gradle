@@ -4,27 +4,23 @@ android {
     namespace 'io.nannyu.voicesatellite.r1'
     compileSdk 33
     ndkVersion '25.2.9519653'
-
     defaultConfig {
         applicationId 'io.nannyu.voicesatellite.r1'
         minSdk 22
         targetSdk 22
-        versionCode 4
-        versionName '0.2.0-dev'
+        versionCode 5
+        versionName '0.3.0-mvp'
         ndk { abiFilters 'armeabi-v7a' }
         externalNativeBuild { cmake { cppFlags '-std=c++11'; arguments '-DANDROID_STL=c++_shared' } }
     }
-
     buildTypes {
         debug { minifyEnabled false }
         release { minifyEnabled false }
     }
-
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-
     externalNativeBuild { cmake { path 'src/main/cpp/CMakeLists.txt'; version '3.22.1' } }
 }
 

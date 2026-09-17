@@ -1,0 +1,2 @@
+# Tested deployment baseline; system libopus is also required.
+websockets==12.0

@@ -1,0 +1,40 @@
+name: Opus gateway E2E
+on:
+  push:
+    paths: ['android-r1/**', 'gateway/**', '.github/workflows/opus-e2e.yml']
+  pull_request:
+    paths: ['android-r1/**', 'gateway/**', '.github/workflows/opus-e2e.yml']
+permissions:
+  contents: read
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: android-r1/jvm-tests/pom.xml
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install host libopus and pinned WebSocket dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopus-dev pkg-config
+          python -m pip install -r gateway/requirements-opus.txt
+      - name: Gateway codec and real WebSocket tests
+        run: python -m unittest discover -s gateway -p 'test_opus_gateway.py' -v
+      - name: Java JNI to Python Gateway interoperability
+        run: bash android-r1/e2e/run-host.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: opus-e2e-results
+          path: |
+            android-r1/jvm-tests/target/surefire-reports/
+            android-r1/jvm-tests/target/host-e2e/*.log
+            android-r1/jvm-tests/target/host-e2e/result-*.txt

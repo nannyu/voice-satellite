@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.nannyu.voicesatellite</groupId>
   <artifactId>r1-jvm-regression</artifactId>
-  <version>0.2.0-SNAPSHOT</version>
+  <version>0.3.0-SNAPSHOT</version>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>8</maven.compiler.release>
@@ -29,6 +29,8 @@
           <include>**/session/LoopbackSession.java</include>
           <include>**/audio/CaptureWorker.java</include>
           <include>**/audio/PcmAudio.java</include>
+          <include>**/audio/Opus*.java</include>
+          <include>**/audio/TurnCodec.java</include>
         </includes></configuration>
       </plugin>
       <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.2.5</version></plugin>
