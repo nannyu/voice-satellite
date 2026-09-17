@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>io.nannyu.voicesatellite</groupId>
+  <artifactId>r1-jvm-regression</artifactId>
+  <version>0.2.0-SNAPSHOT</version>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>8</maven.compiler.release>
+  </properties>
+  <dependencies>
+    <dependency><groupId>com.squareup.okhttp3</groupId><artifactId>okhttp</artifactId><version>3.12.13</version></dependency>
+    <dependency><groupId>org.json</groupId><artifactId>json</artifactId><version>20140107</version></dependency>
+    <dependency><groupId>junit</groupId><artifactId>junit</artifactId><version>4.13.2</version><scope>test</scope></dependency>
+  </dependencies>
+  <build>
+    <!-- Compile production files directly, not copies or Android API stubs. -->
+    <sourceDirectory>${project.basedir}/../app/src/main/java</sourceDirectory>
+    <testSourceDirectory>${project.basedir}/../app/src/test/java</testSourceDirectory>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.11.0</version>
+        <configuration><includes>
+          <include>**/protocol/*.java</include>
+          <include>**/transport/*.java</include>
+          <include>**/util/*.java</include>
+          <include>**/session/SessionController.java</include>
+          <include>**/session/LoopbackSession.java</include>
+          <include>**/audio/CaptureWorker.java</include>
+          <include>**/audio/PcmAudio.java</include>
+        </includes></configuration>
+      </plugin>
+      <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.2.5</version></plugin>
+    </plugins>
+  </build>
+</project>

@@ -7,38 +7,87 @@ import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.ByteString;
 
-/**
- * Thin OkHttp WebSocket wrapper carrying JSON text frames and binary audio
- * frames. OkHttp 3.12.13 is the last branch compatible with Android 5.1.
- * Listener callbacks arrive on OkHttp background threads.
- */
-public final class WebSocketTransport {
-    public interface Listener {
-        void onOpen();
-        void onText(String text);
-        void onBinary(byte[] frame);
-        void onClosed(int code,String reason);
-        void onFailure(Throwable failure);
+/** OkHttp 3.12 transport. Callbacks must enqueue work, not block on another owner. */
+public final class WebSocketTransport implements SocketTransport {
+    private final WebSocket.Factory factory;
+    private final OkHttpClient ownedClient;
+    private WebSocket socket;
+    private long generation;
+    private boolean shutdown;
+
+    public WebSocketTransport() { this(new OkHttpClient(), true); }
+    WebSocketTransport(WebSocket.Factory factory) { this(factory, false); }
+    private WebSocketTransport(WebSocket.Factory factory, boolean ownsClient) {
+        this.factory = factory;
+        this.ownedClient = ownsClient ? (OkHttpClient) factory : null;
     }
 
-    private final OkHttpClient client;
-    private WebSocket socket;
-
-    public WebSocketTransport(){client=new OkHttpClient();}
-
-    public synchronized void connect(String url,final Listener listener){
-        disconnect(1000,"reconnect");
-        socket=client.newWebSocket(new Request.Builder().url(url).build(),new WebSocketListener(){
-            @Override public void onOpen(WebSocket webSocket,Response response){listener.onOpen();}
-            @Override public void onMessage(WebSocket webSocket,String text){listener.onText(text);}
-            @Override public void onMessage(WebSocket webSocket,ByteString bytes){listener.onBinary(bytes.toByteArray());}
-            @Override public void onClosed(WebSocket webSocket,int code,String reason){listener.onClosed(code,reason);}
-            @Override public void onFailure(WebSocket webSocket,Throwable t,Response response){listener.onFailure(t);}
+    @Override public synchronized void connect(String url, final Listener listener) {
+        if (shutdown) throw new IllegalStateException("transport is shut down");
+        final Request request = new Request.Builder().url(url).build();
+        disconnect(1000, "replace");
+        final long ticket = generation;
+        socket = factory.newWebSocket(request, new WebSocketListener() {
+            private boolean current(WebSocket ws) {
+                return ticket == generation && ws == socket && !shutdown;
+            }
+            @Override public void onOpen(WebSocket ws, Response response) {
+                synchronized (WebSocketTransport.this) {
+                    if (current(ws)) listener.onOpen();
+                }
+            }
+            @Override public void onMessage(WebSocket ws, String text) {
+                synchronized (WebSocketTransport.this) {
+                    if (current(ws)) listener.onText(text);
+                }
+            }
+            @Override public void onMessage(WebSocket ws, ByteString bytes) {
+                synchronized (WebSocketTransport.this) {
+                    if (current(ws)) listener.onBinary(bytes.toByteArray());
+                }
+            }
+            @Override public void onClosing(WebSocket ws, int code, String reason) {
+                synchronized (WebSocketTransport.this) {
+                    if (current(ws)) ws.close(code, reason);
+                }
+            }
+            @Override public void onClosed(WebSocket ws, int code, String reason) {
+                synchronized (WebSocketTransport.this) {
+                    if (!current(ws)) return;
+                    socket = null;
+                    generation++;
+                    listener.onClosed(code, reason);
+                }
+            }
+            @Override public void onFailure(WebSocket ws, Throwable failure, Response response) {
+                synchronized (WebSocketTransport.this) {
+                    if (!current(ws)) return;
+                    socket = null;
+                    generation++;
+                    listener.onFailure(failure);
+                }
+            }
         });
     }
-
-    public synchronized boolean sendText(String text){WebSocket s=socket;return s!=null&&s.send(text);}
-    public synchronized boolean sendBinary(byte[] frame){WebSocket s=socket;return s!=null&&s.send(ByteString.of(frame));}
-    public synchronized void disconnect(int code,String reason){WebSocket s=socket;socket=null;if(s!=null)s.close(code,reason);}
-    public synchronized void shutdown(){disconnect(1000,"shutdown");client.dispatcher().executorService().shutdown();}
+    @Override public synchronized boolean sendText(String text) {
+        return socket != null && socket.send(text);
+    }
+    @Override public synchronized boolean sendBinary(byte[] frame) {
+        return socket != null && socket.send(ByteString.of(frame));
+    }
+    @Override public synchronized void disconnect(int code, String reason) {
+        WebSocket previous = socket;
+        socket = null;
+        generation++; // Invalidate before cancel(), which may cause a callback.
+        if (previous != null) previous.cancel();
+        // Intentional disconnects do not wait for a close handshake on a dead link.
+    }
+    @Override public synchronized void shutdown() {
+        shutdown = true;
+        disconnect(1000, "shutdown");
+        if (ownedClient != null) {
+            ownedClient.dispatcher().executorService().shutdown();
+            ownedClient.connectionPool().evictAll();
+        }
+    }
 }

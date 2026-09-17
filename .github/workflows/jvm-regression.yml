@@ -1,0 +1,28 @@
+name: JVM regression tests
+on:
+  push:
+    paths: ['android-r1/**', '.github/workflows/jvm-regression.yml']
+  pull_request:
+    paths: ['android-r1/**', '.github/workflows/jvm-regression.yml']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: android-r1/jvm-tests/pom.xml
+      - name: Test production JVM classes without Android SDK or JNI
+        run: mvn --batch-mode --no-transfer-progress -f android-r1/jvm-tests/pom.xml test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jvm-unit-test-results
+          path: android-r1/jvm-tests/target/surefire-reports/
+          if-no-files-found: warn
