@@ -37,7 +37,13 @@ on the JVM, and deliberately not wired into the diagnostics UI yet. org.json is
 provided by the Android framework on device; JVM tests pin the vintage
 `org.json:json:20140107` artifact to stay on the Android 5.1 API surface.
 
-Target: `minSdk 22`, `targetSdk 22`, `armeabi-v7a` only. The debug APK is intentionally a hardware/codec diagnostic build, not yet the Home Assistant satellite service.
+Target: `minSdk 22`, `targetSdk 22`, `armeabi-v7a` only.
+
+Checklist B wiring lives in `SatelliteActivity` + `VoiceSatelliteService`
+(session/transport/mic/speaker). `MainActivity` remains the Phase A diagnostics UI
+(open it from SatelliteActivity). Default echo URL is `ws://192.168.1.18:8765`
+(plain TextView — R1 ClipboardManager is null, so EditText crashes under
+accessibility). Mic still requires `pm hide com.phicomm.speaker.device` + reboot.
 
 ## Build
 
@@ -80,6 +86,8 @@ The recorder uses 30 ms frames, 300 ms pre-roll, minimum speech gating and about
 
 ## Next integration boundary
 
-The next step is to move these proven primitives behind project-owned interfaces and add the persistent Satellite Service / transport layer. Home Assistant, Xiaozhi and custom agents remain protocol adapters rather than dependencies of the audio engine.
+Wake-word engine selection and a formal 20-session soak. Home Assistant, Xiaozhi
+and custom agents remain protocol adapters rather than dependencies of the audio
+engine.
 
 Read [`../docs/06-source-reuse-inventory.md`](../docs/06-source-reuse-inventory.md), [`../docs/07-upstream-integration.md`](../docs/07-upstream-integration.md), and [`../THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) for provenance and reuse rules.

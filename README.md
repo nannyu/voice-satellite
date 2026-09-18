@@ -2,7 +2,7 @@
 
 将斐讯 R1 改造成无需拆机、优先无需 Root 的通用语音与媒体终端，并首先支持 Home Assistant Assist，同时保留 Custom Agent 与 Xiaozhi-compatible 后端扩展能力。
 
-> 当前阶段：Architecture / MVP design。先验证设备能力和协议链路，再扩展功能，避免在一台 Android 5.1 音箱上提前建造宇宙飞船。
+> 当前阶段：Phase 2 真机 echo 已通（button 触发）。下一步是唤醒词选型与 20 次会话浸泡；HA 仍未开始。
 
 ## Goals
 

@@ -187,6 +187,26 @@ Side effects of hiding this package: stock 小讯 wake-word/voice answers and th
 top-button Bluetooth pairing gesture stop working. Volume keys (Launcher) and
 other stock services are unaffected.
 
+### Microphone / AudioFlinger conflict (verified 3448, 2026-09-18)
+
+The same package is also the **blocking conflict for third-party capture**. With
+`com.phicomm.speaker.device` running after boot, `dumpsys media.audio_flinger`
+shows `AudioFlinger may be deadlocked`, an output thread “maybe dead locked”,
+and two **active** input tracks owned by the Unisound process. The diagnostics
+probe then hard-timeouts on MIC (`frames=0`, capture thread blocked); subsequent
+sources are skipped and PLAYBACK also blocks.
+
+After `pm hide` + reboot: no `speaker.device` process, AudioFlinger client list
+empty at idle, and the probe completes with EXIT=0:
+
+- MIC / VOICE_RECOGNITION / VOICE_COMMUNICATION: `init=true`, 100 frames each
+- PLAYBACK: `played=true`, `simultaneous=true`
+- Repeatable: 3× quiet + 1× speech without App reinstall
+
+Conclusion for v0.1: treating Unisound hide as a **required, reversible
+precondition** for the satellite audio path on stock 3448, not an optional
+boot-jingle tweak.
+
 Device ADB quirks found along the way:
 
 - Stock adbd (`/sbin/adbd`) runs a command whitelist (`create_subproc not support

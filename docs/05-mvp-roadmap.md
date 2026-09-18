@@ -8,41 +8,41 @@ Tasks:
 
 - connect with Wi-Fi ADB — verified 2026-09-17
 - collect Android/build/package information — verified 2026-09-17 (stock 3415 inventory and the 3415 → 3448 upgrade in `tools/r1-upgrade-3448/`)
-- enumerate audio input sources and supported formats — implemented in the diagnostics probe (MIC / VOICE_RECOGNITION / VOICE_COMMUNICATION, 16 kHz stereo PCM16 with software mono); device verification pending
-- record microphone samples — implemented in the diagnostics probe; device verification pending
-- test speaker playback — implemented 2026-09-17 (`AudioPlayer`, 0.1.2-playback); device verification pending
-- test simultaneous/alternating capture and playback — implemented 2026-09-17 (probe plays a 440 Hz tone while recording); device verification pending
+- enumerate audio input sources and supported formats — verified 2026-09-18 on 3448 with APK `0.1.2-playback` (MIC / VOICE_RECOGNITION / VOICE_COMMUNICATION all init+100 frames at 16 kHz stereo PCM16 + software mono); prerequisite: `pm hide com.phicomm.speaker.device`
+- record microphone samples — verified 2026-09-18 (`quiet` + `speech` probes, EXIT=0; speech MIC peakRms≈960 vs quiet≈100–280)
+- test speaker playback — verified 2026-09-18 (`[PLAYBACK] trackInit=true played=true written=48000/48000`)
+- test simultaneous/alternating capture and playback — verified 2026-09-18 (`simultaneous=true` while 440 Hz tone plays)
 - inspect audio focus behavior
-- identify vendor service conflicts
+- identify vendor service conflicts — verified 2026-09-18: stock `com.phicomm.speaker.device` (Unisound) holds active AudioRecord inputs at boot and leaves AudioFlinger deadlocked (`AudioFlinger may be deadlocked`); without hide, probe MIC hard-timeouts. Reversible via `pm unhide`
 - measure idle memory and CPU budget
 
 Exit criteria:
 
-- repeatable microphone recording without Root
-- repeatable speaker playback without Root
+- repeatable microphone recording without Root — verified 2026-09-18 (3× quiet + 1× speech after hide; no App restart between runs)
+- repeatable speaker playback without Root — verified 2026-09-18
 - documented ADB recovery path — verified 2026-09-17 (`tools/r1-upgrade-3448/` file-level backup plus pinned OTA restore path; raw brick recovery still requires Rockchip Loader/Maskrom)
 
 ## Phase 1 - Android audio skeleton
 
 - minimum Android-compatible Gradle project — verified 2026-09-17 (CI builds the armeabi-v7a debug APK and runs unit tests)
-- foreground/background service strategy compatible with target runtime
-- AudioRecord capture — implemented in the diagnostics build; device verification pending
-- AudioTrack playback — implemented 2026-09-17 (`AudioPlayer`); device verification pending
-- diagnostics Activity — implemented (probe, JNI smoke test, manual capture)
-- connection/retry skeleton
+- foreground/background service strategy compatible with target runtime — verified 2026-09-18: `VoiceSatelliteService` (started + bound, sticky, notification)
+- AudioRecord capture — verified 2026-09-18 on device via diagnostics probe (all three sources)
+- AudioTrack playback — verified 2026-09-18 on device via diagnostics probe
+- diagnostics Activity — implemented (probe, JNI smoke test, manual capture); launcher is now `SatelliteActivity`
+- connection/retry skeleton — verified 2026-09-18: `ConnectionSupervisor` live reconnect after gateway kill
 
-Exit criteria: install APK over ADB and complete a loopback/test-session reliably.
+Exit criteria: install APK over ADB and complete a loopback/test-session reliably. — verified 2026-09-18 (diagnostics probe + live echo session against gateway test server).
 
 ## Phase 2 - Voice session
 
 - wake-word engine
-- VAD — implemented in the diagnostics build (libfvad JNI, unverified on device)
+- VAD — libfvad JNI exercised on device 2026-09-18 inside the probe (speech frame counts reported); dedicated endpointing path in `AudioRecorder` still needs a session-level device test
 - pre-roll audio buffer — implemented in `AudioRecorder` (unverified on device)
-- session state machine — in progress 2026-09-17: pure-Java `SessionController` with JVM transition-table tests; not yet wired into a service or UI
-- WebSocket transport — in progress 2026-09-17: `WebSocketTransport` (OkHttp 3.12) + `ConnectionSupervisor`; reconnect/heartbeat decisions unit-tested on the JVM; reference echo server available in `gateway/test_server.py` with pytest coverage; no Android-to-server live test yet
-- binary audio frames — in progress 2026-09-17: binary send/receive path implemented in `WebSocketTransport`; echo round-trip validated server-side by `gateway/test_protocol.py`; no Android-to-server live test yet
+- session state machine — verified 2026-09-18 on device: `VoiceSatelliteService` wires `SessionController` + button trigger; UI on `SatelliteActivity`
+- WebSocket transport — verified 2026-09-18 on device against `gateway/test_server.py --mode echo` (hello → hello.ack; auto-reconnect after server kill)
+- binary audio frames — verified 2026-09-18: uplink PCM frames + downlink echo playback (`Playing N bytes`); batch 5/5 + reconnect echo OK
 
-Exit criteria: wake, speak and receive captured utterance at a test server for 20 consecutive sessions without app restart.
+Exit criteria: wake, speak and receive captured utterance at a test server for 20 consecutive sessions without app restart. — **partial 2026-09-18**: button-triggered echo works end-to-end (1 + 5 + reconnect); wake-word path and formal 20-session soak still open.
 
 ## Phase 3 - Home Assistant spike
 

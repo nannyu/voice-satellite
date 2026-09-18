@@ -1,7 +1,18 @@
 # R1 on-device audio probe automation
 
 通过 Wi-Fi ADB 驱动 Voice Satellite 诊断 App 的自动音频探测，并导出文本报告。
-仅用于自己的 R1：不安装软件、不修改系统包、不提权、不上传数据。
+仅用于自己的 R1：脚本本身不安装软件、不提权、不上传数据。
+
+**前置条件（3448 已验证）**：原厂 `com.phicomm.speaker.device`（Unisound）会在
+开机后占用麦克风并导致 AudioFlinger deadlock；Probe 会 MIC 硬超时。需先可逆隐藏：
+
+```bash
+adb shell "sh /system/bin/pm hide com.phicomm.speaker.device"
+adb shell reboot
+# 恢复：adb shell "sh /system/bin/pm unhide com.phicomm.speaker.device" && adb shell reboot
+```
+
+详见 `docs/02-r1-device.md`。
 
 ## 脚本
 
@@ -37,7 +48,9 @@ python3 r1_probe_playback.py read
 ## 设备事实（3448 固件实测）
 
 - adbd 拒绝顶层 `pm` 命令，必须 `sh -c` 包装（脚本已内建）。
-- adbd 偶发 `error: closed` 断连，脚本会有限重连重试。
-- AudioFlinger 异常（如僵尸输入 `already exists available input`）会导致
-  采集/播放线程永久阻塞；Probe 的 8 秒硬超时保证报告可导出，但恢复音频服务
-  只能重启设备。
+- adbd 偶发 `error: closed` / `offline` 断连；端口仍开但不握手时只能物理重启或
+  `adb reboot`（前提是还能连上）。
+- AudioFlinger 异常（Unisound 占麦 deadlock，或僵尸输入）会导致采集/播放线程
+  永久阻塞；Probe 的 8 秒硬超时保证报告可导出，但恢复音频服务只能重启设备。
+- 2026-09-18：hide Unisound 后 `quiet`×3 + `speech`×1 全部 EXIT=0（APK
+  `0.1.2-playback`）。
