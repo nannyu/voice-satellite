@@ -1,0 +1,105 @@
+{
+  "document_status": "design_only_not_implemented",
+  "version": "0.1",
+  "scope": "拟定的网关与 Agent 内部接口，不是 R1 原厂协议",
+  "create_turn": {
+    "method": "POST",
+    "path": "/voice/v1/turns",
+    "body": {
+      "schema_version": "0.1",
+      "request_id": "req-demo-001",
+      "device_id": "r1-living-room",
+      "conversation_id": "conv-demo-001",
+      "turn_id": "turn-demo-001",
+      "generation": {
+        "gateway_epoch": "epoch-demo-001",
+        "seq": 1
+      },
+      "input": {
+        "type": "text",
+        "text": "帮我查一下客厅温度",
+        "language": "zh-CN",
+        "source": "stock_asr"
+      },
+      "response_budget_ms": 6000,
+      "presentation": {
+        "mode": "stock_text_reply",
+        "target_sentences": 2,
+        "soft_max_chars": 80
+      }
+    }
+  },
+  "accepted_response": {
+    "http_status": 202,
+    "body": {
+      "request_id": "req-demo-001",
+      "turn_id": "turn-demo-001",
+      "generation": {
+        "gateway_epoch": "epoch-demo-001",
+        "seq": 1
+      },
+      "status": "running"
+    }
+  },
+  "read_turn": {
+    "method": "GET",
+    "path": "/voice/v1/turns/turn-demo-001"
+  },
+  "completed_response": {
+    "http_status": 200,
+    "body": {
+      "schema_version": "0.1",
+      "request_id": "req-demo-001",
+      "turn_id": "turn-demo-001",
+      "generation": {
+        "gateway_epoch": "epoch-demo-001",
+        "seq": 1
+      },
+      "status": "completed",
+      "speech": {
+        "text": "客厅现在是二十六度。"
+      },
+      "device_actions": [],
+      "job_id": null
+    }
+  },
+  "cancel_turn": {
+    "method": "POST",
+    "path": "/voice/v1/turns/turn-demo-001/cancel",
+    "body": {
+      "request_id": "cancel-demo-001",
+      "reason": "superseded",
+      "target_generation": {
+        "gateway_epoch": "epoch-demo-001",
+        "seq": 1
+      },
+      "replacement_turn_id": "turn-demo-002"
+    }
+  },
+  "cancel_response_example": {
+    "http_status": 202,
+    "body": {
+      "turn_id": "turn-demo-001",
+      "status": "cancel_requested",
+      "execution_stopped": null,
+      "side_effects_reverted": false
+    }
+  },
+  "capability_defaults_before_validation": {
+    "local_wake_offline": null,
+    "wake_word_barge_in": null,
+    "direct_speech_barge_in": null,
+    "continuous_followup": null,
+    "playback_ack": null,
+    "server_initiated_speech": null,
+    "agent_cancel": null,
+    "agent_idempotency": null
+  },
+  "notes": [
+    "HTTP 202 不直接转发到 R1；须生成通过真机验证的原厂响应。",
+    "generation.seq 由可信新轮次推进，不随每个 HTTP 请求递增。",
+    "request_id 对重试稳定；同样的话再次说出仍是新轮次。",
+    "execution_stopped=null 表示未知，不等于取消成功。",
+    "所有能力默认 unknown，需测试后确认；这是能力登记草案，不是实现状态。"
+  ]
+}
