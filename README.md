@@ -1,10 +1,31 @@
 # Voice Satellite
 
-将斐讯 R1 改造成无需拆机、优先无需 Root 的通用语音与媒体终端，并首先支持 Home Assistant Assist，同时保留 Custom Agent 与 Xiaozhi-compatible 后端扩展能力。
+将斐讯 R1 改造成无需拆机、优先无需 Root 的通用语音与媒体终端。当前设计主线为原厂语音前端桥接服务器 Agent；独立客户端、Home Assistant 与 Xiaozhi-compatible 路线保留为后续扩展。
 
-> 当前阶段：Phase 2 真机 echo 已通（button 触发）。下一步是唤醒词选型与 20 次会话浸泡；HA 仍未开始。
+> 已实现基线：Phase 2 真机 echo 已通（button 触发），HA 仍未开始。原厂桥接方案目前仅完成设计资料，新增网关、Agent 对接和打断能力尚未实现或真机验收。
 
-## Goals
+## 当前设计：原厂语音前端桥接 Agent
+
+保留原厂“小讯小讯”唤醒、采集、ASR 与播报链路，通过局域网兼容网关接入现有服务器 Agent。允许使用明确且已验证的外部上游，不要求全部自建。
+
+唤醒词打断是核心验收项：等待、TTS 和音乐中能开始新轮次，旧声音停止，旧答案不回流。免唤醒词直接插话、主动播报与自动媒体恢复分别验证，未通过不标记为已支持。
+
+停止继续投入 sherpa-onnx；现有 Android、音频编解码、WebSocket 和 echo 实现保留为回归与备用。原厂模式与独立录音/播放模式互斥，不同时启动两套音频链路。只有纯代理出现明确控制缺口时，才研究薄设备端控制层。
+
+- [完整设计：原厂语音前端桥接方案](docs/08-stock-agent-bridge.md)
+- [接口样例、20 项验收矩阵、来源与校验记录](docs/stock-agent-bridge/README.md)
+
+从仓库根目录校验设计资料：
+
+```bash
+python3 docs/stock-agent-bridge/validate_design.py
+```
+
+此命令仅验证文档、JSON、样例关联和引用一致性，不运行设备、网络或业务测试。
+
+## 独立客户端路线目标（历史基线）
+
+以下保留原路线供对照与回归；后续实施优先级以第 08 号设计文档为准。
 
 - 不拆机：优先通过 Wi-Fi ADB 安装与调试。
 - 不刷 ROM：尽可能保留原厂 Android Audio HAL、功放、麦克风与按键能力。
@@ -14,7 +35,7 @@
 - Media native：音乐和有声书直接由设备播放器消费 URL，不经过 TTS 音频链路。
 - Audited reuse：优先复用已有 R1 工程中验证过的音频与媒体实现，但通过项目自有接口隔离来源代码、协议和许可证边界。
 
-## Target architecture
+## 独立客户端架构（历史基线）
 
 ```mermaid
 flowchart LR
@@ -76,7 +97,7 @@ exact source build, creates the file-level backup available through stock ADB,
 hosts the bundled signed OTA on the LAN, waits for the R1 to return, and checks
 the final 3448 fingerprint. The backup is not a raw brick-recovery image.
 
-## MVP v0.1
+## 独立客户端 MVP v0.1（历史基线）
 
 1. Confirm Wi-Fi ADB installation on stock R1.
 2. Record stable 16 kHz mono audio from the microphone path.
@@ -89,7 +110,9 @@ the final 3448 fingerprint. The backup is not a raw brick-recovery image.
 9. Detect stock-service conflicts without making irreversible device changes.
 10. Collect diagnostics: audio route, latency, memory, reconnects and session state.
 
-## Non-goals for v0.1
+## 独立客户端 v0.1 非目标（历史基线）
+
+此列表仅描述旧版独立客户端范围；其中播报中打断已纳入新桥接方案的核心验收，但尚未实现。
 
 - Root-only LED effects
 - Full-duplex acoustic echo cancellation
@@ -109,7 +132,9 @@ the final 3448 fingerprint. The backup is not a raw brick-recovery image.
 - [`docs/05-mvp-roadmap.md`](docs/05-mvp-roadmap.md)
 - [`docs/06-source-reuse-inventory.md`](docs/06-source-reuse-inventory.md)
 - [`docs/07-upstream-integration.md`](docs/07-upstream-integration.md)
+- [`docs/08-stock-agent-bridge.md`](docs/08-stock-agent-bridge.md)
+- [`docs/stock-agent-bridge/README.md`](docs/stock-agent-bridge/README.md)
 
-## Success criteria
+## 独立客户端验收（历史基线）
 
 The first meaningful milestone is deliberately boring: on an unmodified R1, say a wake word, speak a request, have Home Assistant process it, hear the response from the R1, then ask it to play a media URL. Repeat this reliably after reboot and network reconnect. If that works, the antique has officially earned another career.

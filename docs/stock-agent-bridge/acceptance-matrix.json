@@ -1,0 +1,126 @@
+{
+  "status": "proposed_targets_not_benchmark_results",
+  "version": "0.1",
+  "cases": [
+    {
+      "id": "A01",
+      "scenario": "3～5 人不注册声纹，1/3 米静态唤醒",
+      "proposed_target": "每人分别统计；安静环境各组成功率 ≥95%",
+      "status": "not_run"
+    },
+    {
+      "id": "A02",
+      "scenario": "无外网冷启动与原厂唤醒",
+      "proposed_target": "记录是否本地唤醒成功，5 次启动；与对话在线依赖分开",
+      "status": "not_run"
+    },
+    {
+      "id": "A03",
+      "scenario": "固定答案代理闭环",
+      "proposed_target": "连续 20 轮正确，无死锁、卡住和意外旧播报",
+      "status": "not_run"
+    },
+    {
+      "id": "A04",
+      "scenario": "连续语义追问",
+      "proposed_target": "同一会话 10 轮上下文正确；新会话不泄漏旧私密内容",
+      "status": "not_run"
+    },
+    {
+      "id": "A05",
+      "scenario": "TTS 播放中再次唤醒",
+      "proposed_target": "至少 30 次；唤醒词说完到旧声停止 P95 ≤500 ms；成功率 ≥95%",
+      "status": "not_run"
+    },
+    {
+      "id": "A06",
+      "scenario": "音乐中再次唤醒",
+      "proposed_target": "低/中音量分别至少 30 次；记录停声及新话音完整性",
+      "status": "not_run"
+    },
+    {
+      "id": "A07",
+      "scenario": "Agent 延迟时再次唤醒",
+      "proposed_target": "延迟 1/3/5/8 秒组合；新轮生效后旧答不回流",
+      "status": "not_run"
+    },
+    {
+      "id": "A08",
+      "scenario": "A 慢、B 快、A 迟到",
+      "proposed_target": "自动化至少 100 组乱序；旧轮有动作的响应输出为 0",
+      "status": "not_run"
+    },
+    {
+      "id": "A09",
+      "scenario": "相同 sid/请求重试/分片重发",
+      "proposed_target": "Agent 业务调用和副作用均不重复；用户另说同样一句应算新轮",
+      "status": "not_run"
+    },
+    {
+      "id": "A10",
+      "scenario": "原厂过期与静默终结",
+      "proposed_target": "旧请求结束不触发错误播报、重试风暴或阻塞新轮",
+      "status": "not_run"
+    },
+    {
+      "id": "A11",
+      "scenario": "Agent 真取消/不支持取消",
+      "proposed_target": "状态真实；不支持时不得报告已停止后台计算",
+      "status": "not_run"
+    },
+    {
+      "id": "A12",
+      "scenario": "副作用执行后打断",
+      "proposed_target": "不声称撤销；真实效果记录保留；取消响应不重复动作",
+      "status": "not_run"
+    },
+    {
+      "id": "A13",
+      "scenario": "连续人声/电视/音乐负例",
+      "proposed_target": "24 小时受控素材观察误唤醒，初期目标 ≤1 次；注明场景边界",
+      "status": "not_run"
+    },
+    {
+      "id": "A14",
+      "scenario": "重启/断网/上游失败",
+      "proposed_target": "不重放旧答案或未知状态的副作用；能按文档恢复",
+      "status": "not_run"
+    },
+    {
+      "id": "A15",
+      "scenario": "短问答首声",
+      "proposed_target": "用户说完到实际首声 P95 ≤5 秒目标；报告 ASR/Agent/播报分段",
+      "status": "not_run"
+    },
+    {
+      "id": "A16",
+      "scenario": "24 小时常驻",
+      "proposed_target": "无持续内存增长、麦克风冲突、请求积压或服务失联",
+      "status": "not_run"
+    },
+    {
+      "id": "A17",
+      "scenario": "安全与隐私",
+      "proposed_target": "未登记设备/管理入口拒绝；日志无 token、cookie、原始音频",
+      "status": "not_run"
+    },
+    {
+      "id": "A18",
+      "scenario": "回滚演练",
+      "proposed_target": "恢复原厂路由和包状态后原厂闭环可重复；独立链路需互斥切换",
+      "status": "not_run"
+    },
+    {
+      "id": "A19",
+      "scenario": "免唤醒词直接插话",
+      "proposed_target": "独立记录；未通过保持未交付，不用 A05 代替",
+      "status": "not_run"
+    },
+    {
+      "id": "A20",
+      "scenario": "主动播报/自动恢复媒体/断点续播",
+      "proposed_target": "分别有可信控制与反馈才启用；未实现记录 unknown/unsupported",
+      "status": "not_run"
+    }
+  ]
+}
