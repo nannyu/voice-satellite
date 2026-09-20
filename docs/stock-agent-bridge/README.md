@@ -8,7 +8,8 @@
 - `agent-api-examples.json`：拟定的内部 Agent 接口样例，不是原厂协议。
 - `acceptance-matrix.json`：20 个拟定验收场景；全部标记为未执行。
 - `sources.json`：核对的来源与仓库提交。
-- `validate_design.py`：离线校验 JSON、引用、样例关联和验收编号，不访问网络或设备。
+- `validate_design.py`：离线校验文档编号与索引、JSON、接口样例、验收矩阵、来源 URL/固定提交与 Markdown 引用一致性，不访问网络或设备。
+- `test_validate_design.py`：反例回归测试，确保丢失来源引用、空 URL、验收表漂移和重复文档编号都会失败。
 - `VALIDATION.md`：本轮文档校验记录。
 
 ## 使用顺序
@@ -19,8 +20,9 @@
 
 ```bash
 python3 docs/stock-agent-bridge/validate_design.py
+python3 docs/stock-agent-bridge/test_validate_design.py -v
 ```
 
 从仓库根目录运行。上述命令仅做资料一致性校验，不验证真机、ASR 上游或 Agent 实现。
 
-本次提交仅更新设计资料、仓库说明与离线一致性校验脚本；没有更改运行代码、路由器、设备包状态或权限。
+本次提交还整合了独立 Android 回归客户端、历史 KWS 探针和只读设备取证工具。这些代码不代表原厂桥接服务已实现；没有更改路由器、设备包状态或权限。

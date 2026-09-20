@@ -1,0 +1,7 @@
+r1-stock-inventory-*/
+**/apk/*.apk
+**/apk/*.odex
+**/apk/*.vdex
+__pycache__/
+.pytest_cache/
+*.pyc

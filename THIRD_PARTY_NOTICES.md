@@ -34,11 +34,45 @@ License status at audit date: GitHub repository metadata reports no recognized l
 
 Project policy: reference only until licensing provenance is clarified. No source code or binary assets are copied into `voice-satellite`. Its Android 5.1 lifecycle, Xiaozhi activation/WebSocket flows, reconnect behavior and configuration model may be used as behavioral references for an independent implementation.
 
-## Snowboy / wake-word assets
+## Picovoice Porcupine
 
-Some examined R1 projects include Snowboy native libraries, resource files and wake-word models. Their provenance is not automatically covered by the enclosing repository's license. In particular, `r1-manager`'s wake-word wrapper states that its Snowboy assets came from `r1-helper`.
+Previously evaluated (`ai.picovoice:porcupine-android`). **Rejected and removed** from
+the app: requires AccessKey / account and does not meet Chinese + fully offline
+product requirements. See `docs/09-wake-word.md`.
 
-Project policy: no Snowboy binary, model or resource is imported until the exact asset license and redistribution conditions are verified. The Core API will support a replaceable `WakeWordEngine`, so the project is not structurally dependent on Snowboy.
+## Snowboy (Kitt-AI) — independent-client backup wake engine
+
+Upstream: https://github.com/Kitt-AI/snowboy
+Pinned commit: `c9ff036e2ef3f9c422a3b8c9a01361dbad7a9bd4`
+License: Apache License 2.0 for the toolkit, libraries, `common.res`, and
+`resources/models/snowboy.umdl`. Other hotword models have their own licenses.
+Personal `.pmdl` models are user-generated.
+
+Vendored into `android-r1/app` (hashes in `src/main/assets/snowboy/PROVENANCE.md`):
+
+- `jniLibs/armeabi-v7a/libsnowboy-detect-android.so` — from official `SnowboyAlexaDemo.apk`
+- `assets/snowboy/common.res`, `assets/snowboy/snowboy.umdl`
+- `java/ai/kitt/snowboy/{SnowboyDetect,snowboyJNI}.java` — project-owned SWIG-compatible
+  wrappers matching the official JNI `.so` (not copied from r1-helper)
+
+Do **not** copy Snowboy wrappers, JNI, or models from `sagan/r1-helper` (GPL-2.0)
+or other unverified R1 dumps. Chinese wake uses a user-supplied `*.pmdl`.
+
+## sherpa-onnx (KWS probe only)
+
+Upstream: https://github.com/k2-fsa/sherpa-onnx
+AAR: `sherpa-onnx-1.11.3.aar` (bootstrap into `android-r1/app/libs/`, gitignored).
+Pinned to ≤1.11.x because newer AARs lack SYSV `DT_HASH` and fail to `dlopen` on
+Android 5.1 (`empty/missing DT_HASH in libonnxruntime.so`).
+KWS model: `sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20` chunk-8 subset under
+`tools/kws-probe/models/` (gitignored; see `docs/10-kws-perf-probe.md`).
+
+Used **only** by the diagnostics `KwsPerfProbe` to record whether open-vocab KWS
+is viable on R1. It is not part of the stock Agent bridge or the session wake path.
+License: Apache-2.0 (upstream).
+
+2026-09-19 device matrix: **RESULT=MARGINAL** (best INT8×2t RTF≈0.79). Formal
+wake integration deferred.
 
 ## Opus and libfvad
 

@@ -2,7 +2,7 @@
 
 将斐讯 R1 改造成无需拆机、优先无需 Root 的通用语音与媒体终端。当前设计主线为原厂语音前端桥接服务器 Agent；独立客户端、Home Assistant 与 Xiaozhi-compatible 路线保留为后续扩展。
 
-> 已实现基线：Phase 2 真机 echo 已通（button 触发），HA 仍未开始。原厂桥接方案目前仅完成设计资料，新增网关、Agent 对接和打断能力尚未实现或真机验收。
+> 已实现基线：Phase 2 真机 echo 已通（button 触发），HA 仍未开始。原厂桥接方案目前仅完成设计资料，新增网关、Agent 对接和打断能力尚未实现或真机验收。此前的 Snowboy、sherpa-onnx KWS 与原厂前端提取实验已整合为历史/回归材料，不再决定主线。
 
 ## 当前设计：原厂语音前端桥接 Agent
 
@@ -19,9 +19,10 @@
 
 ```bash
 python3 docs/stock-agent-bridge/validate_design.py
+python3 docs/stock-agent-bridge/test_validate_design.py -v
 ```
 
-此命令仅验证文档、JSON、样例关联和引用一致性，不运行设备、网络或业务测试。
+这些命令仅验证文档、JSON、样例关联和引用一致性，不运行设备、网络或业务测试。
 
 ## 独立客户端路线目标（历史基线）
 
@@ -75,6 +76,8 @@ gateway/                     Optional generic Voice Gateway
 adapters/                    Server-side integrations
 docs/                        Architecture, protocol and reuse design
 tools/r1-upgrade-3448/       Verified stock 3415 → 3448 upgrade package
+tools/kws-probe/              Historical sherpa-onnx performance probe assets
+tools/stock-frontend/         Read-only stock package/device inventory tool
 THIRD_PARTY_NOTICES.md       License/provenance policy
 ```
 
@@ -133,6 +136,9 @@ the final 3448 fingerprint. The backup is not a raw brick-recovery image.
 - [`docs/06-source-reuse-inventory.md`](docs/06-source-reuse-inventory.md)
 - [`docs/07-upstream-integration.md`](docs/07-upstream-integration.md)
 - [`docs/08-stock-agent-bridge.md`](docs/08-stock-agent-bridge.md)
+- [`docs/09-wake-word.md`](docs/09-wake-word.md) — 独立客户端唤醒实验（历史/备用）
+- [`docs/10-kws-perf-probe.md`](docs/10-kws-perf-probe.md) — sherpa-onnx 真机性能结论（历史证据）
+- [`docs/11-stock-frontend.md`](docs/11-stock-frontend.md) — 原厂 PCM 前端提取备选路线（已被第 08 号方案取代）
 - [`docs/stock-agent-bridge/README.md`](docs/stock-agent-bridge/README.md)
 
 ## 独立客户端验收（历史基线）

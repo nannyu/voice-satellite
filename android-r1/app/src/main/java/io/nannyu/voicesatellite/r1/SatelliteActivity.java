@@ -16,7 +16,7 @@ import io.nannyu.voicesatellite.r1.service.VoiceSatelliteService;
 import io.nannyu.voicesatellite.r1.session.SessionController;
 
 /**
- * Minimal Checklist B UI: WebSocket URL, connect/disconnect, TALK, session state.
+ * Satellite UI: connect, TALK, Simulate Wake, session/wake status.
  * Phase A diagnostics remain on MainActivity.
  */
 public final class SatelliteActivity extends Activity {
@@ -24,19 +24,24 @@ public final class SatelliteActivity extends Activity {
     private Button connectButton;
     private Button disconnectButton;
     private Button talkButton;
+    private Button simulateWakeButton;
     private TextView status;
     private TextView log;
 
     private VoiceSatelliteService service;
     private boolean bound;
+    private boolean wakeListening;
+    private String wakeEngineName = "none";
 
     private final ServiceConnection connection = new ServiceConnection() {
         @Override public void onServiceConnected(ComponentName name, IBinder binder) {
             service = ((VoiceSatelliteService.LocalBinder) binder).getService();
             bound = true;
             service.setCallback(callback);
+            wakeEngineName = service.wakeEngineName();
+            wakeListening = service.isWakeArmed();
             refreshButtons();
-            appendLog("Service bound");
+            appendLog("Service bound; wake engine=" + wakeEngineName);
         }
 
         @Override public void onServiceDisconnected(ComponentName name) {
@@ -53,6 +58,13 @@ public final class SatelliteActivity extends Activity {
         }
 
         @Override public void onSessionState(SessionController.State state) {
+            setStatusLine();
+            refreshButtons();
+        }
+
+        @Override public void onWakeListening(boolean listening, String engineName) {
+            wakeListening = listening;
+            wakeEngineName = engineName;
             setStatusLine();
             refreshButtons();
         }
@@ -115,8 +127,17 @@ public final class SatelliteActivity extends Activity {
         });
         root.addView(talkButton);
 
+        simulateWakeButton = new Button(this);
+        simulateWakeButton.setText("Simulate Wake");
+        simulateWakeButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                if (service != null) service.onSimulateWake();
+            }
+        });
+        root.addView(simulateWakeButton);
+
         status = new TextView(this);
-        status.setText("State: IDLE | DISCONNECTED\nLast error: —");
+        status.setText("State: IDLE | DISCONNECTED\nWake: —");
         root.addView(status);
 
         Button diagnostics = new Button(this);
@@ -157,9 +178,11 @@ public final class SatelliteActivity extends Activity {
         boolean connected = hasService && service.isConnected();
         boolean ready = hasService && service.isReady();
         SessionController.State state = hasService ? service.sessionState() : SessionController.State.IDLE;
+        boolean idleReady = hasService && ready && state == SessionController.State.IDLE;
         connectButton.setEnabled(hasService && !connected);
         disconnectButton.setEnabled(hasService && connected);
-        talkButton.setEnabled(hasService && ready && state == SessionController.State.IDLE);
+        talkButton.setEnabled(idleReady);
+        simulateWakeButton.setEnabled(idleReady);
         setStatusLine();
     }
 
@@ -168,13 +191,13 @@ public final class SatelliteActivity extends Activity {
         boolean ready = service != null && service.isReady();
         SessionController.State state = service == null ? SessionController.State.IDLE : service.sessionState();
         String link = !connected ? "DISCONNECTED" : (ready ? "READY" : "CONNECTING…");
-        status.setText("State: " + state + " | " + link);
+        String wake = wakeListening ? ("listening/" + wakeEngineName) : ("off/" + wakeEngineName);
+        status.setText("State: " + state + " | " + link + "\nWake: " + wake);
     }
 
     private void appendLog(String line) {
         CharSequence existing = log.getText();
         String next = existing.length() == 0 ? line : existing + "\n" + line;
-        // Keep the last ~40 lines readable on the small R1 screen.
         String[] parts = next.split("\n");
         if (parts.length > 40) {
             StringBuilder trimmed = new StringBuilder();

@@ -22,6 +22,8 @@ import io.nannyu.voicesatellite.r1.session.HandlerScheduler;
 import io.nannyu.voicesatellite.r1.session.SessionController;
 import io.nannyu.voicesatellite.r1.transport.ConnectionSupervisor;
 import io.nannyu.voicesatellite.r1.transport.WebSocketTransport;
+import io.nannyu.voicesatellite.r1.wakeword.WakeWordEngine;
+import io.nannyu.voicesatellite.r1.wakeword.WakeWordEngines;
 
 /**
  * Owns the voice-session wiring for Checklist B: ConnectionSupervisor +
@@ -33,6 +35,7 @@ public final class VoiceSatelliteService extends Service {
     public interface Callback {
         void onConnectionChanged(boolean connected, boolean ready);
         void onSessionState(SessionController.State state);
+        void onWakeListening(boolean listening, String engineName);
         void onError(String message);
         void onLog(String line);
     }
@@ -61,6 +64,9 @@ public final class VoiceSatelliteService extends Service {
     private WebSocketTransport transport;
     private AudioRecorder recorder;
     private Thread playerThread;
+    private WakeWordEngine wakeEngine;
+    private String voiceTrigger = Protocol.TRIGGER_BUTTON;
+    private volatile boolean wakeArmed;
 
     private volatile boolean connected;
     private volatile boolean ready;
@@ -73,6 +79,8 @@ public final class VoiceSatelliteService extends Service {
         super.onCreate();
         session = new SessionController(sessionListener, new HandlerScheduler(mainHandler),
                 NO_SPEECH_TIMEOUT_MS, RESPONSE_TIMEOUT_MS);
+        wakeEngine = WakeWordEngines.create(this);
+        emitLog("Wake engine: " + wakeEngine.name());
         startForeground(NOTIFICATION_ID, buildNotification("Idle"));
     }
 
@@ -83,6 +91,7 @@ public final class VoiceSatelliteService extends Service {
     @Override public IBinder onBind(Intent intent) { return binder; }
 
     @Override public void onDestroy() {
+        stopWakeListening();
         disconnect();
         if (transport != null) { transport.shutdown(); transport = null; }
         super.onDestroy();
@@ -93,6 +102,8 @@ public final class VoiceSatelliteService extends Service {
     public SessionController.State sessionState() { return session.state(); }
     public boolean isConnected() { return connected; }
     public boolean isReady() { return ready; }
+    public boolean isWakeArmed() { return wakeArmed; }
+    public String wakeEngineName() { return wakeEngine == null ? "none" : wakeEngine.name(); }
 
     public synchronized void connect(String url) {
         if (url == null || url.trim().isEmpty()) {
@@ -118,20 +129,36 @@ public final class VoiceSatelliteService extends Service {
     public void onButtonPressed() {
         mainHandler.post(new Runnable() {
             @Override public void run() {
-                if (!ready) { emitError("Not ready (waiting for hello.ack)"); return; }
-                if (session.state() != SessionController.State.IDLE) {
-                    emitError("Busy: " + session.state());
-                    return;
-                }
-                session.onEvent(SessionController.Event.BUTTON_PRESSED);
+                beginListening(Protocol.TRIGGER_BUTTON, SessionController.Event.BUTTON_PRESSED);
             }
         });
+    }
+
+    /** Test hook for the wake path without a spoken keyword / model. */
+    public void onSimulateWake() {
+        mainHandler.post(new Runnable() {
+            @Override public void run() {
+                beginListening(Protocol.TRIGGER_WAKE_WORD, SessionController.Event.WAKE_DETECTED);
+            }
+        });
+    }
+
+    private void beginListening(String trigger, SessionController.Event event) {
+        if (!ready) { emitError("Not ready (waiting for hello.ack)"); return; }
+        if (session.state() != SessionController.State.IDLE) {
+            emitError("Busy: " + session.state());
+            return;
+        }
+        voiceTrigger = trigger;
+        stopWakeListening();
+        session.onEvent(event);
     }
 
     private void disconnectInternal(boolean notify) {
         ready = false;
         connected = false;
         cancelMaxUtterance();
+        stopWakeListening();
         stopRecorder();
         stopPlayback();
         collectingResponse = false;
@@ -172,6 +199,11 @@ public final class VoiceSatelliteService extends Service {
             } else if (from == SessionController.State.LISTENING) {
                 cancelMaxUtterance();
                 stopRecorder();
+            }
+            if (to == SessionController.State.IDLE && ready) {
+                startWakeListening();
+            } else if (from == SessionController.State.IDLE) {
+                stopWakeListening();
             }
         }
 
@@ -217,6 +249,7 @@ public final class VoiceSatelliteService extends Service {
             connected = false;
             ready = false;
             collectingResponse = false;
+            stopWakeListening();
             stopRecorder();
             mainHandler.post(new Runnable() {
                 @Override public void run() {
@@ -237,6 +270,13 @@ public final class VoiceSatelliteService extends Service {
             emitConnection(true, true);
             emitLog("Ready session_id=" + (supervisor == null ? "?" : supervisor.sessionId()));
             updateNotification("Ready");
+            mainHandler.post(new Runnable() {
+                @Override public void run() {
+                    if (ready && session.state() == SessionController.State.IDLE) {
+                        startWakeListening();
+                    }
+                }
+            });
             return;
         }
         if (Protocol.TYPE_STATE.equals(message.type)) {
@@ -285,14 +325,14 @@ public final class VoiceSatelliteService extends Service {
             ConnectionSupervisor s = supervisor;
             String sid = s == null ? null : s.sessionId();
             if (s == null || sid == null || session.state() != SessionController.State.LISTENING) return;
-            if (!s.send(Protocol.voiceStart(sid, Protocol.TRIGGER_BUTTON))) {
+            if (!s.send(Protocol.voiceStart(sid, voiceTrigger))) {
                 emitError("Failed to send voice.start");
                 postEvent(SessionController.Event.ERROR);
                 return;
             }
             postEvent(SessionController.Event.SPEECH_STARTED);
             armMaxUtterance();
-            emitLog("voice.start (VAD=" + (recorder == null ? "?" : recorder.getVadMode()) + ")");
+            emitLog("voice.start trigger=" + voiceTrigger + " (VAD=" + (recorder == null ? "?" : recorder.getVadMode()) + ")");
         }
 
         @Override public void onAudioFrame(byte[] pcm30ms) {
@@ -345,6 +385,7 @@ public final class VoiceSatelliteService extends Service {
     }
 
     private synchronized void startRecorder() {
+        stopWakeListening();
         stopRecorder();
         recorder = new AudioRecorder();
         recorder.setListener(recorderListener);
@@ -361,6 +402,51 @@ public final class VoiceSatelliteService extends Service {
             recorder.close();
             recorder = null;
         }
+    }
+
+    private synchronized void startWakeListening() {
+        if (!ready || session.state() != SessionController.State.IDLE) return;
+        if (wakeEngine == null) wakeEngine = WakeWordEngines.create(this);
+        if (wakeEngine.isRunning()) return;
+        if ("none".equals(wakeEngine.name())) {
+            wakeArmed = false;
+            emitWake(false);
+            emitLog("Wake armed=false (engine=none; use Simulate Wake or add assets/snowboy/*.pmdl)");
+            return;
+        }
+        stopRecorder();
+        wakeEngine.start(new WakeWordEngine.Listener() {
+            @Override public void onWakeWord(String id, float confidence, long timestampMs) {
+                emitLog("Wake word: " + id + " conf=" + confidence);
+                mainHandler.post(new Runnable() {
+                    @Override public void run() {
+                        beginListening(Protocol.TRIGGER_WAKE_WORD, SessionController.Event.WAKE_DETECTED);
+                    }
+                });
+            }
+
+            @Override public void onError(String message) {
+                emitError("Wake: " + message);
+                mainHandler.post(new Runnable() {
+                    @Override public void run() {
+                        wakeArmed = false;
+                        emitWake(false);
+                    }
+                });
+            }
+        });
+        wakeArmed = true;
+        emitWake(true);
+        emitLog("Wake listening (" + wakeEngine.name() + ")");
+        updateNotification("Wake: " + wakeEngine.name());
+    }
+
+    private synchronized void stopWakeListening() {
+        wakeArmed = false;
+        if (wakeEngine != null && wakeEngine.isRunning()) {
+            wakeEngine.stop();
+        }
+        emitWake(false);
     }
 
     private void startPlayback(final byte[] pcm) {
@@ -424,6 +510,15 @@ public final class VoiceSatelliteService extends Service {
         mainHandler.post(new Runnable() {
             @Override public void run() {
                 if (callback != null) callback.onSessionState(state);
+            }
+        });
+    }
+
+    private void emitWake(final boolean listening) {
+        final String name = wakeEngine == null ? "none" : wakeEngine.name();
+        mainHandler.post(new Runnable() {
+            @Override public void run() {
+                if (callback != null) callback.onWakeListening(listening, name);
             }
         });
     }

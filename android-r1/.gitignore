@@ -2,4 +2,5 @@
 **/build/
 app/.cxx/
 app/src/main/cpp/vendor/
+app/libs/sherpa-onnx-*.aar
 local.properties

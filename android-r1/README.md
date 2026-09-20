@@ -30,6 +30,7 @@ app/src/main/cpp/
   voice_sat_native.cpp             project JNI bridge
   CMakeLists.txt
 scripts/bootstrap-native.sh        pinned upstream dependency bootstrap
+scripts/bootstrap-kws-probe.sh     pinned sherpa AAR/model bootstrap for diagnostics only
 ```
 
 The session/protocol/transport layer is device-independent, fully unit-tested
@@ -52,6 +53,7 @@ Requirements: JDK 17, Android SDK 33, NDK 25.2.9519653, CMake 3.22.1 and Gradle 
 ```bash
 cd android-r1
 bash scripts/bootstrap-native.sh
+bash scripts/bootstrap-kws-probe.sh --aar-only
 gradle :app:assembleDebug
 ```
 
@@ -74,11 +76,12 @@ The adapted Java/JNI structure originates from MIT-licensed `kitakeyos-dev/r1-ma
 
 ## Diagnostics APK
 
-The launcher Activity currently provides three tests:
+The diagnostics Activity currently provides four tests:
 
 1. `Run automatic R1 Audio Probe`: records MIC, VOICE_RECOGNITION and VOICE_COMMUNICATION at 16 kHz stereo with software mono downmix and libfvad, then plays a 440 Hz tone while recording on MIC to verify the playback path and simultaneous capture/playback. Every stage has an 8 second hard timeout and the report is printed on screen.
 2. `Test VAD + Opus JNI`: loads the ARMv7 native library and performs an Opus encode/decode smoke test.
-3. `Start / Stop microphone`: opens `VOICE_COMMUNICATION` at 16 kHz mono PCM16 and runs the hybrid VAD endpointing path.
+3. `Start / Stop microphone`: exercises the independent-client recorder manually.
+4. `Run KWS Perf Probe`: offline sherpa-onnx Keyword Spotting matrix (INT8/FP32 × 1/2 threads). See `docs/10-kws-perf-probe.md`. Not part of the session path.
 
 Pure PCM helpers (stereo downmix, test-tone generation) live in `PcmAudio` without Android imports and are covered by `gradle :app:testDebugUnitTest`, which also runs in CI before the APK build.
 
@@ -86,8 +89,10 @@ The recorder uses 30 ms frames, 300 ms pre-roll, minimum speech gating and about
 
 ## Next integration boundary
 
-Wake-word engine selection and a formal 20-session soak. Home Assistant, Xiaozhi
-and custom agents remain protocol adapters rather than dependencies of the audio
-engine.
+This application is now a regression/backup client. The current product direction
+is the stock Agent bridge in `docs/08-stock-agent-bridge.md`; do not run this
+independent microphone/playback path alongside the stock voice service. Home
+Assistant, Xiaozhi and custom agents remain protocol adapters rather than
+dependencies of the audio engine.
 
 Read [`../docs/06-source-reuse-inventory.md`](../docs/06-source-reuse-inventory.md), [`../docs/07-upstream-integration.md`](../docs/07-upstream-integration.md), and [`../THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) for provenance and reuse rules.

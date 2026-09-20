@@ -33,7 +33,7 @@ No Home Assistant or Xiaozhi message type belongs in this layer.
 - `AudioInput`: adapted from the useful subset of `r1-manager` AudioRecorder.
 - `VoiceActivityDetector`: libfvad-backed implementation derived from audited `r1-manager` code.
 - `AudioCodec`: optional Opus implementation derived from audited `r1-manager` code; PCM remains supported.
-- `WakeWordEngine`: replaceable; no Snowboy dependency until native/model licenses are separately verified.
+- `WakeWordEngine`: replaceable; the independent-client backup implementation is offline Snowboy (official Apache assets + user `.pmdl`). The stock Agent bridge does not use it.
 - `ConversationalAudioOutput`: low-latency PCM output for TTS/response streams.
 - `MediaPlayer`: ExoPlayer-backed generic URL player adapted from the useful subset of `r1-manager`.
 - `DeviceCapabilities`: populated by R1-specific clean-room probes.
