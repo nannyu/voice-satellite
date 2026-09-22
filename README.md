@@ -2,7 +2,7 @@
 
 将斐讯 R1 改造成无需拆机、优先无需 Root 的通用语音与媒体终端。当前设计主线为原厂语音前端桥接服务器 Agent；独立客户端、Home Assistant 与 Xiaozhi-compatible 路线保留为后续扩展。
 
-> 已实现基线：Phase 2 真机 echo 已通（button 触发），HA 仍未开始。原厂桥接方案目前仅完成设计资料，新增网关、Agent 对接和打断能力尚未实现或真机验收。此前的 Snowboy、sherpa-onnx KWS 与原厂前端提取实验已整合为历史/回归材料，不再决定主线。
+> 已实现基线：Phase 2 真机 echo 已通（button 触发），HA 仍未开始。原厂桥接已新增 P1 服务器切片（受限 passthrough/fixed_reply 与离线回归），但尚未接入 R1、DNS 或真实 Agent，打断能力也未真机验收。此前的 Snowboy、sherpa-onnx KWS 与原厂前端提取实验已整合为历史/回归材料，不再决定主线。
 
 ## 当前设计：原厂语音前端桥接 Agent
 
@@ -14,6 +14,7 @@
 
 - [完整设计：原厂语音前端桥接方案](docs/08-stock-agent-bridge.md)
 - [接口样例、20 项验收矩阵、来源与校验记录](docs/stock-agent-bridge/README.md)
+- [P1 Stock Gateway 服务器切片](services/stock-gateway/README.md)
 
 从仓库根目录校验设计资料：
 
@@ -73,6 +74,7 @@ android-r1/                 Android 5.1 R1 client
   vendor/r1/                Clean-room R1 package/hardware probes
   upstream/r1-manager/      Audited MIT-derived implementation area
 gateway/                     Optional generic Voice Gateway
+services/stock-gateway/      Stock bridge P1 passthrough/fixed-reply service
 adapters/                    Server-side integrations
 docs/                        Architecture, protocol and reuse design
 tools/r1-upgrade-3448/       Verified stock 3415 → 3448 upgrade package
