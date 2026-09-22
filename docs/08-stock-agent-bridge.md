@@ -3,7 +3,7 @@
 版本：0.1（设计基线）
 日期：2026-09-20
 目标设备：用户的 R1 / 固件 3448
-状态：已核对相关仓库代码；本文的新网关、接口和验收项尚未实现或真机验收。本次提交同时整合了本地 Android 回归客户端、KWS 历史探针和只读取证工具；不修改设备、路由器或任何运行中的服务。
+状态：已核对相关仓库代码；`services/stock-gateway/` 已实现 P1 的受限 passthrough/fixed_reply 服务器切片与离线回归，但尚未接入 R1、DNS、真实上游或 Agent，本文接口和验收项均未真机验收。本仓库同时保留 Android 回归客户端、KWS 历史探针和只读取证工具；不修改设备、路由器或任何运行中的服务。
 
 ## 1. 决策摘要
 
@@ -321,17 +321,17 @@ P0/P1 通过固定答案和延迟注入（例如 1、3、5、8 秒）测出原�
 
 ## 11. 在现有仓库中的落点
 
-本文存放于 `docs/08-stock-agent-bridge.md`，接口样例、验收矩阵和校验脚本存放于 `docs/stock-agent-bridge/`。第 09～11 号文档保留旧路线的实现和真机证据，不改变第 08 号文档的主线优先级。以下服务与契约目录为后续实现建议，尚未实现：
+本文存放于 `docs/08-stock-agent-bridge.md`，接口样例、验收矩阵和校验脚本存放于 `docs/stock-agent-bridge/`。第 09～11 号文档保留旧路线的实现和真机证据，不改变第 08 号文档的主线优先级。`services/stock-gateway/` 已建立 P1 服务器切片；以下其余模块仍是后续演进目标：
 
 ```text
 services/stock-gateway/
-  protocol/          原厂转发、解码、终态、响应包装
-  session/           设备映射、conversation、turn、generation
-  agents/            实际 Agent 的适配器
-  presentation/      播报与媒体动作
-  diagnostics/       脱敏指标、故障注入
-  tests/             协议样本、并发、幂等、取消和截止时间
-  deploy/            经验证后形成的部署与回滚配置
+  stock_gateway/     已实现：受限原厂转发、fixed_reply、边界与脱敏日志
+  tests/             已实现：离线协议/安全边界和 20 轮服务器回归
+  session/           待实现：设备映射、conversation、turn、generation
+  agents/            待实现：实际 Agent 的适配器
+  presentation/      待实现：播报与媒体动作
+  diagnostics/       待实现：指标、故障注入与验收报告
+  deploy/            待真机验证后形成部署与回滚配置
 
 docs/08-stock-agent-bridge.md
 contracts/voice-agent-v0.1/
@@ -348,7 +348,7 @@ contracts/voice-agent-v0.1/
 | 阶段 | 可验证交付 | 通过门槛 | 失败时处理 |
 |---|---|---|---|
 | P0 原厂基线与协议取证 | 重新确认包状态；经授权恢复原厂独占链路；验证 ASR、上游、冷启动、播放中唤醒与等待窗口 | 至少形成真实可复现的原厂闭环与网络依赖记录 | 上游不可用先解决依赖；不投入 Agent 业务 |
-| P1 可控代理闭环 | passthrough/fixed_reply 模式，单设备 DNS，脱敏报文回归，静默结束 | 固定答案 20 轮稳定；打断和旧响应终结可观察 | 协议不支持则列阻塞，不假冒静默 JSON |
+| P1 可控代理闭环 | passthrough/fixed_reply 服务器切片已实现；单设备 DNS、真实脱敏报文回归和静默结束仍待真机 | 固定答案 20 轮稳定；打断和旧响应终结可观察 | 协议不支持则列阻塞，不假冒静默 JSON |
 | P2 Agent 与会话 | AgentAdapter、会话、幂等、generation、deadline、cancel | 多轮追问与乱序重试测试通过；只执行一次副作用 | 不支持真取消则明确标注，仍保证旧输出隔离 |
 | P3 打断与媒体验收 | 等待/TTS/音乐中的新轮次测试；媒体暂停与恢复策略 | 旧声音停止、旧输出无回流、新问题完整 | 有明确缺口才研究薄控制层 |
 | P4 稳定性与发布 | 重启、断网、恢复、24 小时运行、回滚演练 | 达到下面指标并记录未交付项 | 不扩大到更多设备或主动播报 |
