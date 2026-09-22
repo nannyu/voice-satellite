@@ -3,6 +3,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- KWS perf probe reads /sdcard/kws-probe models + writes last-report.txt -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <application android:allowBackup="false" android:label="Voice Satellite R1" android:theme="@android:style/Theme.Material.Light">
         <activity android:name=".SatelliteActivity" android:screenOrientation="landscape" android:exported="true">
             <intent-filter>

@@ -19,6 +19,8 @@ jobs:
         with: { gradle-version: '7.6.4' }
       - name: Bootstrap pinned native dependencies
         run: bash android-r1/scripts/bootstrap-native.sh
+      - name: Bootstrap probe compile dependency
+        run: bash android-r1/scripts/bootstrap-kws-probe.sh --aar-only
       - name: Run unit tests
         working-directory: android-r1
         run: gradle --no-daemon :app:testDebugUnitTest

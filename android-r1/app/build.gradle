@@ -9,11 +9,13 @@ android {
         applicationId 'io.nannyu.voicesatellite.r1'
         minSdk 22
         targetSdk 22
-        versionCode 4
-        versionName '0.2.0-dev'
+        versionCode 7
+        versionName '0.2.3-dev'
         ndk { abiFilters 'armeabi-v7a' }
         externalNativeBuild { cmake { cppFlags '-std=c++11'; arguments '-DANDROID_STL=c++_shared' } }
     }
+
+    buildFeatures { buildConfig true }
 
     buildTypes {
         debug { minifyEnabled false }
@@ -30,6 +32,10 @@ android {
 
 dependencies {
     implementation 'com.squareup.okhttp3:okhttp:3.12.13'
+    // sherpa-onnx AAR is Kotlin; stdlib required for KeywordSpotter interop.
+    // Probe-only: not wired into VoiceSatelliteService. See docs/10-kws-perf-probe.md.
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.7.22'
+    implementation files('libs/sherpa-onnx-1.11.3.aar')
     testImplementation 'junit:junit:4.13.2'
     // Vintage org.json matching the Android 5.1 framework API surface for JVM tests.
     testImplementation 'org.json:json:20140107'

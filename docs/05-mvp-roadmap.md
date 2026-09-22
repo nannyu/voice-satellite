@@ -35,14 +35,16 @@ Exit criteria: install APK over ADB and complete a loopback/test-session reliabl
 
 ## Phase 2 - Voice session
 
-- wake-word engine
+- wake / capture frontend — **current pivot 2026-09-20**: keep the stock wake/capture/ASR/playback path and bridge final text to the server Agent. See `docs/08-stock-agent-bridge.md`; P0/P1 must prove the stock baseline and protocol before Agent business is enabled.
+- wake-word (historical independent client): Snowboy remains in the tree as a regression/backup path (`docs/09-wake-word.md`); sherpa KWS measured MARGINAL (`docs/10-kws-perf-probe.md`) and is probe-only.
+- extracted stock PCM frontend (superseded alternative): the read-only evidence and A/B investigation are retained in `docs/11-stock-frontend.md` and `tools/stock-frontend/`, but are not the first implementation path.
 - VAD — libfvad JNI exercised on device 2026-09-18 inside the probe (speech frame counts reported); dedicated endpointing path in `AudioRecorder` still needs a session-level device test
 - pre-roll audio buffer — implemented in `AudioRecorder` (unverified on device)
-- session state machine — verified 2026-09-18 on device: `VoiceSatelliteService` wires `SessionController` + button trigger; UI on `SatelliteActivity`
+- session state machine — verified 2026-09-18 on device: `VoiceSatelliteService` wires `SessionController` + button/wake triggers; UI on `SatelliteActivity`. It is an independent-client regression path and must not run alongside the stock voice package.
 - WebSocket transport — verified 2026-09-18 on device against `gateway/test_server.py --mode echo` (hello → hello.ack; auto-reconnect after server kill)
 - binary audio frames — verified 2026-09-18: uplink PCM frames + downlink echo playback (`Playing N bytes`); batch 5/5 + reconnect echo OK
 
-Exit criteria: wake, speak and receive captured utterance at a test server for 20 consecutive sessions without app restart. — **partial 2026-09-18**: button-triggered echo works end-to-end (1 + 5 + reconnect); wake-word path and formal 20-session soak still open.
+Exit criteria (revised): stock service owns audio; a fixed-reply bridge completes 20 stable turns; wake-word interruption during waiting/playback stops old output and prevents late responses from returning. Prior Simulate Wake/PCM echo remains a regression baseline only.
 
 ## Phase 3 - Home Assistant spike
 

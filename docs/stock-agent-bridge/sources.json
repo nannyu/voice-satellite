@@ -1,0 +1,86 @@
+{
+  "repository_refs": {
+    "SaifLau/r1-stock-bridge": "9df3ca10a522d61f1524d0ff12ee3bb55ab20991",
+    "nannyu/voice-satellite": "fd0fbe0350b49ad1cc116e41ca6913bb22456df6"
+  },
+  "sources": [
+    {
+      "id": "S1",
+      "title": "r1-stock-bridge 核对提交",
+      "url": "https://github.com/SaifLau/r1-stock-bridge/commit/9df3ca10a522d61f1524d0ff12ee3bb55ab20991",
+      "verified_on": "2026-09-20"
+    },
+    {
+      "id": "S2",
+      "title": "voice-satellite README，核对提交",
+      "url": "https://github.com/nannyu/voice-satellite/blob/fd0fbe0350b49ad1cc116e41ca6913bb22456df6/README.md",
+      "verified_on": "2026-09-20"
+    },
+    {
+      "id": "S3",
+      "title": "原厂代理、ASR 映射与回答处理",
+      "url": "https://github.com/SaifLau/r1-stock-bridge/blob/9df3ca10a522d61f1524d0ff12ee3bb55ab20991/app/r1_compat.py",
+      "verified_on": "2026-09-20"
+    },
+    {
+      "id": "S4",
+      "title": "兼容模型请求、SSE 与重试实现",
+      "url": "https://github.com/SaifLau/r1-stock-bridge/blob/9df3ca10a522d61f1524d0ff12ee3bb55ab20991/app/openai_compat.py",
+      "verified_on": "2026-09-20"
+    },
+    {
+      "id": "S5",
+      "title": "HTTP 接入、请求体读取、管理与代理路由",
+      "url": "https://github.com/SaifLau/r1-stock-bridge/blob/9df3ca10a522d61f1524d0ff12ee3bb55ab20991/app/server.py",
+      "verified_on": "2026-09-20"
+    },
+    {
+      "id": "S6",
+      "title": "3448 原厂服务与录音冲突记录",
+      "url": "https://github.com/nannyu/voice-satellite/blob/fd0fbe0350b49ad1cc116e41ca6913bb22456df6/docs/02-r1-device.md",
+      "verified_on": "2026-09-20"
+    },
+    {
+      "id": "S7",
+      "title": "现有 Gateway 及 echo 测试定位",
+      "url": "https://github.com/nannyu/voice-satellite/blob/fd0fbe0350b49ad1cc116e41ca6913bb22456df6/gateway/README.md",
+      "verified_on": "2026-09-20"
+    },
+    {
+      "id": "S8",
+      "title": "r1-stock-bridge MIT LICENSE",
+      "url": "https://github.com/SaifLau/r1-stock-bridge/blob/9df3ca10a522d61f1524d0ff12ee3bb55ab20991/LICENSE",
+      "verified_on": "2026-09-20"
+    },
+    {
+      "id": "S9",
+      "title": "原项目部署与 DNS 候选域名",
+      "url": "https://github.com/SaifLau/r1-stock-bridge/blob/9df3ca10a522d61f1524d0ff12ee3bb55ab20991/docs/DEPLOYMENT_CN.md",
+      "verified_on": "2026-09-20"
+    },
+    {
+      "id": "S10",
+      "title": "build_speaker_prompt、normalize_tts_answer 与原厂回答包装",
+      "url": "https://github.com/SaifLau/r1-stock-bridge/blob/9df3ca10a522d61f1524d0ff12ee3bb55ab20991/app/r1_compat.py#L340-L455",
+      "verified_on": "2026-09-20"
+    },
+    {
+      "id": "S11",
+      "title": "Android 官方：绑定服务与同进程 Local Binder",
+      "url": "https://developer.android.com/develop/background-work/services/bound-services",
+      "verified_on": "2026-09-20"
+    },
+    {
+      "id": "S12",
+      "title": "Requests 官方：Timeouts",
+      "url": "https://requests.readthedocs.io/en/latest/user/quickstart/#timeouts",
+      "verified_on": "2026-09-20"
+    },
+    {
+      "id": "S13",
+      "title": "Python 官方：http.server 使用边界",
+      "url": "https://docs.python.org/3/library/http.server.html",
+      "verified_on": "2026-09-20"
+    }
+  ]
+}
